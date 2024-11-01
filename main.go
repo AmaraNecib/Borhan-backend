@@ -3,30 +3,32 @@ package main
 import (
 	"log"
 
+	"github.com/AmaraNecib/Borhan-backend/DB"
 	database "github.com/AmaraNecib/Borhan-backend/Database"
-	"github.com/gofiber/fiber/v2"
+	"github.com/AmaraNecib/Borhan-backend/api"
 )
 
 func main() {
-	// Create a new Fiber app
-	app := fiber.New()
-
-	// Database connection string
-	// dbURL := "postgres://sensei57:aB3$c!@D#5f~G+?*@101.46.70.58:5432/postgres"
-
-	// Connect to the database
 	DATABASE, err := database.ConnectToDB()
 
 	if err != nil {
 		log.Fatalf("Error connecting to the database: %v", err)
 		database.CloseDB(DATABASE)
 	}
-	defer DATABASE.Close()
-	// Example route
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Connected to PostgreSQL!")
-	})
+	// schema, err := ioutil.ReadFile("schema.sql")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	// Start the server
-	log.Fatal(app.Listen(":3000"))
+	// // Execute the schema creation
+	// if _, err := DATABASE.Exec(string(schema)); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("Successfully created schema")
+	queries := DB.New(DATABASE)
+	_, err = api.Init(queries)
+	if err != nil {
+		panic(err)
+	}
+	defer DATABASE.Close()
 }
