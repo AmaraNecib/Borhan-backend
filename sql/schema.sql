@@ -19,35 +19,25 @@ CREATE TABLE IF NOT EXISTS Patients (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- جدول الفحوصات
-CREATE TABLE IF NOT EXISTS Examinations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    patient_id UUID REFERENCES Patients(id) ON DELETE CASCADE,
-    examination_data JSONB NOT NULL, -- البيانات مشفرة
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- جدول المعلومات العامة
-CREATE TABLE IF NOT EXISTS GeneralInfo (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
-    full_name VARCHAR(200),
-    date_of_birth DATE,
-    address TEXT,
-    phone_number VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- جدول العيادات
 CREATE TABLE IF NOT EXISTS Clinics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES Users(id) ON DELETE CASCADE NOT NULL,
     clinic_name VARCHAR(200) NOT NULL,
     address TEXT,
     phone_number VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- جدول الفحوصات
+CREATE TABLE IF NOT EXISTS Examinations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID REFERENCES Patients(id) ON DELETE CASCADE NOT NULL,
+    clinic_id UUID REFERENCES Clinics(id) ON DELETE CASCADE NOT NULL,
+    examinations_type VARCHAR(50) NOT NULL,
+    examination_data JSONB NOT NULL, -- البيانات مشفرة
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- جدول الأدوار
 CREATE TABLE IF NOT EXISTS Roles (
@@ -57,7 +47,7 @@ CREATE TABLE IF NOT EXISTS Roles (
 );
 
 CREATE TABLE IF NOT EXISTS AccountRoles (
-    user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
-    role_id UUID REFERENCES Roles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES Users(id) ON DELETE CASCADE NOT NULL,
+    role_id UUID REFERENCES Roles(id) ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (user_id, role_id)
 );

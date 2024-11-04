@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.27.0
 
-package DB
+package repository
 
 import (
 	"database/sql"
@@ -19,7 +19,7 @@ type Accountrole struct {
 
 type Clinic struct {
 	ID          uuid.UUID      `json:"id"`
-	UserID      uuid.NullUUID  `json:"user_id"`
+	UserID      uuid.UUID      `json:"user_id"`
 	ClinicName  string         `json:"clinic_name"`
 	Address     sql.NullString `json:"address"`
 	PhoneNumber sql.NullString `json:"phone_number"`
@@ -27,20 +27,12 @@ type Clinic struct {
 }
 
 type Examination struct {
-	ID              uuid.UUID       `json:"id"`
-	PatientID       uuid.NullUUID   `json:"patient_id"`
-	ExaminationData json.RawMessage `json:"examination_data"`
-	CreatedAt       sql.NullTime    `json:"created_at"`
-}
-
-type Generalinfo struct {
-	ID          uuid.UUID      `json:"id"`
-	UserID      uuid.NullUUID  `json:"user_id"`
-	FullName    sql.NullString `json:"full_name"`
-	DateOfBirth sql.NullTime   `json:"date_of_birth"`
-	Address     sql.NullString `json:"address"`
-	PhoneNumber sql.NullString `json:"phone_number"`
-	CreatedAt   sql.NullTime   `json:"created_at"`
+	ID               uuid.UUID       `json:"id"`
+	PatientID        uuid.UUID       `json:"patient_id"`
+	ClinicID         uuid.UUID       `json:"clinic_id"`
+	ExaminationsType string          `json:"examinations_type"`
+	ExaminationData  json.RawMessage `json:"examination_data"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
 }
 
 type Patient struct {

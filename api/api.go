@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AmaraNecib/Borhan-backend/DB" // Adjust the import path as necessary
 	auth "github.com/AmaraNecib/Borhan-backend/jwt"
-
+	"github.com/AmaraNecib/Borhan-backend/repository"
+	static "github.com/AmaraNecib/Borhan-backend/static"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -19,7 +19,7 @@ func Protected() func(*fiber.Ctx) error {
 		SigningKey: jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
 	})
 }
-func Init(db *DB.Queries) (*fiber.App, error) {
+func Init(db *repository.Queries) (*fiber.App, error) {
 	app := fiber.New(
 		fiber.Config{
 			Prefork: true,
@@ -33,12 +33,18 @@ func Init(db *DB.Queries) (*fiber.App, error) {
 		// AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 	app.Use(logger.New())
+	// app.Get("/test", PredictHeartV1(db))
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 	v1.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Connected to PostgreSQL!")
+		return c.SendString("Connected")
 	})
+	// Clinic
+	clinic := v1.Group("/clinic")
+	clinic.Post("/register", CreateClinic(db))
+	clinic.Post("/login", loginForClinics(db))
+	clinic.Get("/all/clinics", AdminsOnly, getAllClinics(db))
 	// User
 	// v1.Post("/register", CreateUser(db))
 	// v1.Post("/login", login(db))
@@ -48,12 +54,12 @@ func Init(db *DB.Queries) (*fiber.App, error) {
 		SigningKey: jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"ok":    false,
-				"error": "Unauthorized",
+				"ok":  false,
+				"msg": "Unauthorized",
 			})
 		},
 	}))
-
+	clinic.Post("/predict/heart", PredictHeart(db))
 	log.Fatal(app.Listen(":3000"))
 	return app, nil
 }
@@ -63,8 +69,19 @@ func restricted(c *fiber.Ctx) error {
 		return c.SendString("Welcome to the restricted area")
 	} else {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"ok":    false,
-			"error": "Unauthorized",
+			"ok":  false,
+			"msg": "Unauthorized",
+		})
+	}
+}
+
+func AdminsOnly(c *fiber.Ctx) error {
+	if auth.GetUserRole(strings.Split(c.Get("Authorization"), " ")[1]) == static.Admin {
+		return c.Next()
+	} else {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"ok":  false,
+			"msg": "this route does not exist",
 		})
 	}
 }

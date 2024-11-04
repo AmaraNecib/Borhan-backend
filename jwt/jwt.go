@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AmaraNecib/Borhan-backend/static"
+	"github.com/google/uuid"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -33,12 +34,12 @@ func decrypt(input string) (*Claims, error) {
 	}
 }
 
-func GetUserRole(token string) (string, error) {
+func GetUserRole(token string) string {
 	payload, err := decrypt(token)
 	if err != nil {
-		return "", err
+		return ""
 	}
-	return payload.Role, nil
+	return payload.Role
 }
 
 func ValidToken(token string) bool {
@@ -50,7 +51,7 @@ func ValidToken(token string) bool {
 	return true
 }
 
-func CreateToken(id int, role string) (string, error) {
+func CreateToken(id uuid.UUID, role string) (string, error) {
 	claims := Claims{
 		ID:   id,
 		Role: role,
@@ -60,10 +61,10 @@ func CreateToken(id int, role string) (string, error) {
 }
 
 // Protected protect routes
-func GetUserID(token string) int {
+func GetUserID(token string) uuid.UUID {
 	payload, err := decrypt(token)
 	if err != nil {
-		return 0
+		return uuid.Nil
 	}
 	return payload.ID
 }

@@ -17,14 +17,19 @@ func ConnectToDB() (*sql.DB, error) {
 	}
 	serviceURI := os.Getenv("DATABASE_URL")
 
-	conn, _ := url.Parse(serviceURI)
+	conn, err := url.Parse(serviceURI)
+	if err != nil {
+		return nil, err
+	}
 
 	db, err := sql.Open("postgres", conn.String())
 	if err != nil {
 		fmt.Println("Error opening connection to database: ", err)
 		return nil, err
 	}
-
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
 	return db, nil
 	// err := godotenv.Load()
 	// if err != nil {
