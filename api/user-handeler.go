@@ -47,6 +47,13 @@ func CreateClinic(db *repository.Queries) fiber.Handler {
 			UserID:     user.ID,
 			ClinicName: clinic.ClinicName,
 		})
+		if err != nil {
+			fmt.Println("here ", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"ok":  false,
+				"msg": fmt.Sprintf("something went wrong: %v", err),
+			})
+		}
 		response := fiber.Map{
 			"ok":  true,
 			"msg": "clinic created successfully",
@@ -70,7 +77,6 @@ func loginForClinics(db *repository.Queries) fiber.Handler {
 		// }
 		// get user if by email
 		// get user by email
-
 		res, err := db.GetUserByEmail(c.Context(), Login.Email)
 
 		// Create the Claims
@@ -94,8 +100,16 @@ func loginForClinics(db *repository.Queries) fiber.Handler {
 				"msg": "Invalid Credentials"},
 			)
 		}
+		id, err := db.GetClinicByEmail(c.Context(), Login.Email)
+		if err != nil {
+			fmt.Println("here ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"ok":  false,
+				"msg": "Invalid Credentials",
+			})
+		}
 		// Create token
-		token, err := auth.CreateToken(res.ID, "clinic")
+		token, err := auth.CreateToken(id, "clinic")
 		if err != nil {
 			fmt.Println("here ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -105,8 +119,10 @@ func loginForClinics(db *repository.Queries) fiber.Handler {
 		}
 
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-			"ok":    true,
-			"token": token,
-			"role":  "clinic"})
+			"ok":       true,
+			"token":    token,
+			"userId":   res.ID,
+			"token.id": auth.GetUserID(token),
+			"role":     "clinic"})
 	}
 }

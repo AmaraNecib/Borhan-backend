@@ -7,6 +7,8 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -35,15 +37,59 @@ func (q *Queries) CreateClinic(ctx context.Context, arg CreateClinicParams) (Cli
 	return i, err
 }
 
-const createPatient = `-- name: CreatePatient :one
-INSERT INTO Patients (national_id)
-    VALUES ($1)  -- Replace with the actual national_id
-    ON CONFLICT (national_id) DO NOTHING
-    RETURNING id
+const createExamination = `-- name: CreateExamination :one
+INSERT INTO Examinations (patient_id, clinic_id, examinations_type, examination_data)
+    VALUES ($1, $2, $3, $4) RETURNING id, patient_id, clinic_id, examinations_type, examination_data, created_at
 `
 
-func (q *Queries) CreatePatient(ctx context.Context, nationalID string) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, createPatient, nationalID)
+type CreateExaminationParams struct {
+	PatientID        uuid.UUID       `json:"patient_id"`
+	ClinicID         uuid.UUID       `json:"clinic_id"`
+	ExaminationsType string          `json:"examinations_type"`
+	ExaminationData  json.RawMessage `json:"examination_data"`
+}
+
+func (q *Queries) CreateExamination(ctx context.Context, arg CreateExaminationParams) (Examination, error) {
+	row := q.db.QueryRowContext(ctx, createExamination,
+		arg.PatientID,
+		arg.ClinicID,
+		arg.ExaminationsType,
+		arg.ExaminationData,
+	)
+	var i Examination
+	err := row.Scan(
+		&i.ID,
+		&i.PatientID,
+		&i.ClinicID,
+		&i.ExaminationsType,
+		&i.ExaminationData,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createPatient = `-- name: CreatePatient :one
+INSERT INTO Patients (last_name, first_name, date_of_birth, national_id)
+VALUES ($1, $2, $3, $4)  -- Replace with the actual national_id
+ON CONFLICT (national_id) 
+DO UPDATE SET national_id = EXCLUDED.national_id  -- Dummy update to trigger the conflict handling
+RETURNING id
+`
+
+type CreatePatientParams struct {
+	LastName    string    `json:"last_name"`
+	FirstName   string    `json:"first_name"`
+	DateOfBirth time.Time `json:"date_of_birth"`
+	NationalID  string    `json:"national_id"`
+}
+
+func (q *Queries) CreatePatient(ctx context.Context, arg CreatePatientParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, createPatient,
+		arg.LastName,
+		arg.FirstName,
+		arg.DateOfBirth,
+		arg.NationalID,
+	)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -110,33 +156,36 @@ func (q *Queries) GetAllClinics(ctx context.Context, arg GetAllClinicsParams) ([
 	return items, nil
 }
 
-const getTables = `-- name: GetTables :many
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public'
+const getClinicByEmail = `-- name: GetClinicByEmail :one
+SELECT Clinics.id
+FROM Clinics
+JOIN Users ON Clinics.user_id = Users.id
+WHERE Users.email = $1
 `
 
-func (q *Queries) GetTables(ctx context.Context) ([]interface{}, error) {
-	rows, err := q.db.QueryContext(ctx, getTables)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []interface{}
-	for rows.Next() {
-		var table_name interface{}
-		if err := rows.Scan(&table_name); err != nil {
-			return nil, err
-		}
-		items = append(items, table_name)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetClinicByEmail(ctx context.Context, email string) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getClinicByEmail, email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getClinicByID = `-- name: GetClinicByID :one
+SELECT id, user_id, clinic_name, address, phone_number, created_at FROM Clinics WHERE user_id = $1
+`
+
+func (q *Queries) GetClinicByID(ctx context.Context, userID uuid.UUID) (Clinic, error) {
+	row := q.db.QueryRowContext(ctx, getClinicByID, userID)
+	var i Clinic
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ClinicName,
+		&i.Address,
+		&i.PhoneNumber,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -153,31 +202,4 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-const info = `-- name: Info :many
-SELECT current_database()
-`
-
-func (q *Queries) Info(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, info)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var current_database string
-		if err := rows.Scan(&current_database); err != nil {
-			return nil, err
-		}
-		items = append(items, current_database)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

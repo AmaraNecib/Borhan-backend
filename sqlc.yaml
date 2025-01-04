@@ -13,3 +13,9 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"
+          - db_type: "jsonb"
+            go_type:
+              type: "json.RawMessage"
+          - db_type: "timestamp"
+            go_type:
+              type: "time.Time"

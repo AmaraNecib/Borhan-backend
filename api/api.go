@@ -60,7 +60,8 @@ func Init(db *repository.Queries) (*fiber.App, error) {
 		},
 	}))
 	clinic.Post("/predict/heart", PredictHeart(db))
-	log.Fatal(app.Listen(":3000"))
+
+	log.Fatal(app.Listen(":3001"))
 	return app, nil
 }
 
