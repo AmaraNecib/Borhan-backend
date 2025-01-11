@@ -30,3 +30,9 @@ SELECT Clinics.id
 FROM Clinics
 JOIN Users ON Clinics.user_id = Users.id
 WHERE Users.email = $1;  -- Replace $1 with the user email parameter
+
+-- name: GetPatientHistoryByNationalId :many
+SELECT Examinations.examination_data, Examinations.examinations_type, Patients.date_of_birth, Patients.first_name, Patients.last_name, Patients.national_id, Examinations.created_at
+FROM Examinations
+INNER JOIN Patients ON Examinations.patient_id = Patients.id
+WHERE Patients.national_id = $1;

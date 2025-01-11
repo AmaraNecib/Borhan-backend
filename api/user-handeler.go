@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 
 	auth "github.com/AmaraNecib/Borhan-backend/jwt"
@@ -119,10 +120,66 @@ func loginForClinics(db *repository.Queries) fiber.Handler {
 		}
 
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-			"ok":       true,
-			"token":    token,
-			"userId":   res.ID,
-			"token.id": auth.GetUserID(token),
-			"role":     "clinic"})
+			"ok":     true,
+			"token":  token,
+			"userId": res.ID,
+			// "token.id": auth.GetUserID(token),
+			"role": "clinic"})
+	}
+}
+
+func GetHistory(db *repository.Queries) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		nationalID := c.Params("national_id")
+		history, err := db.GetPatientHistoryByNationalId(c.Context(), nationalID)
+		// get the gender from examination_data
+		// gender :=
+		//  add all ExaminationData and ExaminationsType from the history to data variable
+		data := []types.GetPatientHistoryByNationalIdRow{}
+		for _, v := range history {
+			var examData types.HeartPredictRes
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"ok":  false,
+					"msg": "Invalid Credentials",
+				})
+			}
+			if err := json.Unmarshal(history[0].ExaminationData, &examData); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"ok":  false,
+					"msg": "Error unmarshalling examination data",
+				})
+			}
+			data = append(data, types.GetPatientHistoryByNationalIdRow{
+				ExaminationData:  examData,
+				ExaminationsType: v.ExaminationsType,
+			})
+		}
+		var examData types.HeartPredictRes
+		if err := json.Unmarshal(history[0].ExaminationData, &examData); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"ok":  false,
+				"msg": "Error unmarshalling examination data",
+			})
+		}
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"ok":          true,
+			"first Name":  history[0].FirstName,
+			"last Name":   history[0].LastName,
+			"national ID": history[0].NationalID,
+			"Birth Date":  history[0].DateOfBirth,
+			"gender":      examData.Sex,
+			"examData":    data,
+			"history":     history[0].ExaminationsType,
+		})
+		// return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		// 	"ok":          true,
+		// 	"first Name":  history[0].FirstName,
+		// 	"last Name":   history[0].LastName,
+		// 	"national ID": history[0].NationalID,
+		// 	"Birth Date":  history[0].DateOfBirth,
+		// 	"gender":      history[0].ExaminationData.Sex,
+		// 	"history":     history[0].ExaminationsType,
+		// })
 	}
 }

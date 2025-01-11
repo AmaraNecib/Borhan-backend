@@ -1,6 +1,6 @@
 module github.com/AmaraNecib/Borhan-backend
 
-go 1.23.1
+go 1.21.4
 
 require (
 	github.com/gofiber/contrib/jwt v1.0.10

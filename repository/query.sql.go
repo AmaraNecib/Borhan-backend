@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -171,11 +172,11 @@ func (q *Queries) GetClinicByEmail(ctx context.Context, email string) (uuid.UUID
 }
 
 const getClinicByID = `-- name: GetClinicByID :one
-SELECT id, user_id, clinic_name, address, phone_number, created_at FROM Clinics WHERE user_id = $1
+SELECT id, user_id, clinic_name, address, phone_number, created_at FROM Clinics WHERE id = $1
 `
 
-func (q *Queries) GetClinicByID(ctx context.Context, userID uuid.UUID) (Clinic, error) {
-	row := q.db.QueryRowContext(ctx, getClinicByID, userID)
+func (q *Queries) GetClinicByID(ctx context.Context, id uuid.UUID) (Clinic, error) {
+	row := q.db.QueryRowContext(ctx, getClinicByID, id)
 	var i Clinic
 	err := row.Scan(
 		&i.ID,
@@ -186,6 +187,56 @@ func (q *Queries) GetClinicByID(ctx context.Context, userID uuid.UUID) (Clinic, 
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getPatientHistoryByNationalId = `-- name: GetPatientHistoryByNationalId :many
+
+SELECT Examinations.examination_data, Examinations.examinations_type, Patients.date_of_birth, Patients.first_name, Patients.last_name, Patients.national_id, Examinations.created_at
+FROM Examinations
+INNER JOIN Patients ON Examinations.patient_id = Patients.id
+WHERE Patients.national_id = $1
+`
+
+type GetPatientHistoryByNationalIdRow struct {
+	ExaminationData  json.RawMessage `json:"examination_data"`
+	ExaminationsType string          `json:"examinations_type"`
+	DateOfBirth      time.Time       `json:"date_of_birth"`
+	FirstName        string          `json:"first_name"`
+	LastName         string          `json:"last_name"`
+	NationalID       string          `json:"national_id"`
+	CreatedAt        sql.NullTime    `json:"created_at"`
+}
+
+// Replace $1 with the user email parameter
+func (q *Queries) GetPatientHistoryByNationalId(ctx context.Context, nationalID string) ([]GetPatientHistoryByNationalIdRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPatientHistoryByNationalId, nationalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPatientHistoryByNationalIdRow
+	for rows.Next() {
+		var i GetPatientHistoryByNationalIdRow
+		if err := rows.Scan(
+			&i.ExaminationData,
+			&i.ExaminationsType,
+			&i.DateOfBirth,
+			&i.FirstName,
+			&i.LastName,
+			&i.NationalID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
