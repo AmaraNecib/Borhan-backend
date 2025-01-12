@@ -128,10 +128,11 @@ func loginForClinics(db *repository.Queries) fiber.Handler {
 	}
 }
 
-func GetHistory(db *repository.Queries) fiber.Handler {
+func GetUserHistory(db *repository.Queries) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		nationalID := c.Params("national_id")
 		history, err := db.GetPatientHistoryByNationalId(c.Context(), nationalID)
+		fmt.Println("history ", history[0].CreatedAt.Time)
 		// get the gender from examination_data
 		// gender :=
 		//  add all ExaminationData and ExaminationsType from the history to data variable
@@ -150,6 +151,8 @@ func GetHistory(db *repository.Queries) fiber.Handler {
 					"msg": "Error unmarshalling examination data",
 				})
 			}
+			fmt.Println("examData ", examData)
+			examData.CreatedAt = v.CreatedAt.Time.String()
 			data = append(data, types.GetPatientHistoryByNationalIdRow{
 				ExaminationData:  examData,
 				ExaminationsType: v.ExaminationsType,
@@ -162,6 +165,10 @@ func GetHistory(db *repository.Queries) fiber.Handler {
 				"msg": "Error unmarshalling examination data",
 			})
 		}
+		// reverses the data array
+		for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
+			data[i], data[j] = data[j], data[i]
+		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"ok":          true,
 			"first Name":  history[0].FirstName,
@@ -170,7 +177,7 @@ func GetHistory(db *repository.Queries) fiber.Handler {
 			"Birth Date":  history[0].DateOfBirth,
 			"gender":      examData.Sex,
 			"examData":    data,
-			"history":     history[0].ExaminationsType,
+			// "history":     history[0].ExaminationsType,
 		})
 		// return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		// 	"ok":          true,
@@ -181,5 +188,25 @@ func GetHistory(db *repository.Queries) fiber.Handler {
 		// 	"gender":      history[0].ExaminationData.Sex,
 		// 	"history":     history[0].ExaminationsType,
 		// })
+	}
+}
+
+func GetAllPatient(db *repository.Queries) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		patients, err := db.GetAllPatients(c.Context())
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"ok":  false,
+				"msg": "Invalid Credentials",
+			})
+		}
+		// reverse the patients array
+		for i, j := 0, len(patients)-1; i < j; i, j = i+1, j-1 {
+			patients[i], patients[j] = patients[j], patients[i]
+		}
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"ok":       true,
+			"patients": patients,
+		})
 	}
 }

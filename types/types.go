@@ -93,18 +93,19 @@ type HeartPredictInfo struct {
 	Thal     ThalType    `json:"thal"`  //done
 }
 type HeartPredictRes struct {
-	Oldpeak  float64     `json:"oldpeak"`
-	Sex      string      `json:"sex"`
-	Cp       CpType      `json:"cp"`
-	Trestbps float64     `json:"trestbps"`
-	Chol     float64     `json:"chol"`
-	Fbs      Logic       `json:"fbs"`     //done
-	Restecg  RestecgType `json:"restecg"` //done
-	Thalach  float64     `json:"thalach"`
-	Exang    Logic       `json:"exang"`
-	Slope    SlopeType   `json:"slope"` //done
-	Ca       CaType      `json:"ca"`    //done
-	Thal     ThalType    `json:"thal"`  //done
+	Oldpeak   float64     `json:"oldpeak"`
+	Sex       string      `json:"sex"`
+	Cp        CpType      `json:"cp"`
+	Trestbps  float64     `json:"trestbps"`
+	Chol      float64     `json:"chol"`
+	Fbs       Logic       `json:"fbs"`     //done
+	Restecg   RestecgType `json:"restecg"` //done
+	Thalach   float64     `json:"thalach"`
+	Exang     Logic       `json:"exang"`
+	Slope     SlopeType   `json:"slope"` //done
+	Ca        CaType      `json:"ca"`    //done
+	Thal      ThalType    `json:"thal"`  //done
+	CreatedAt string      `json:"created_at"`
 }
 
 type GetPatientHistoryByNationalIdRow struct {

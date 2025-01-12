@@ -157,6 +157,40 @@ func (q *Queries) GetAllClinics(ctx context.Context, arg GetAllClinicsParams) ([
 	return items, nil
 }
 
+const getAllPatients = `-- name: GetAllPatients :many
+SELECT id, first_name, last_name, date_of_birth, national_id, created_at FROM Patients
+`
+
+func (q *Queries) GetAllPatients(ctx context.Context) ([]Patient, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPatients)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Patient
+	for rows.Next() {
+		var i Patient
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.DateOfBirth,
+			&i.NationalID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getClinicByEmail = `-- name: GetClinicByEmail :one
 SELECT Clinics.id
 FROM Clinics

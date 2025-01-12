@@ -36,3 +36,6 @@ SELECT Examinations.examination_data, Examinations.examinations_type, Patients.d
 FROM Examinations
 INNER JOIN Patients ON Examinations.patient_id = Patients.id
 WHERE Patients.national_id = $1;
+
+-- name: GetAllPatients :many
+SELECT * FROM Patients;

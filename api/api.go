@@ -41,9 +41,10 @@ func Init(db *repository.Queries) (*fiber.App, error) {
 		return c.SendString("Connected")
 	})
 	// user history
-	user := v1.Group("/user")
-	// history from user natinal id
-	user.Get("/:national_id/history", GetHistory(db))
+	history := v1.Group("/history")
+	history.Get("/all", GetAllPatient(db))
+	// history from history natinal id
+	history.Get("/:national_id", GetUserHistory(db))
 	// Clinic
 	clinic := v1.Group("/clinic")
 	clinic.Post("/register", CreateClinic(db))
